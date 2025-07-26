@@ -1,5 +1,6 @@
 from pyrogram import Client, filters
 from pyrogram.types import Message
+from pyrogram import idle
 import os
 import subprocess
 import tempfile
@@ -66,11 +67,13 @@ def is_owner(message: Message) -> bool:
     return message.from_user and message.from_user.id == OWNER_ID
 
 # /start
+
 @app.on_message(filters.command("start"))
 async def start_command(client: Client, message: Message):
     if not is_owner(message):
         return await message.reply("❌ You are not authorized to use this bot.")
     await message.reply("👋 Welcome! Send an MP4 video or document to convert it to MPEG-2 format.\nUse /help for more info.")
+
 
 # /help
 @app.on_message(filters.command("help"))
@@ -128,5 +131,9 @@ async def handle_video(client: Client, message: Message):
 # Main bot start with deployment message
 
 if __name__ == "__main__":
-    logger.info("✅ Bot is running.")
-    app.run()
+    logger.info("✅ Starting bot...")
+    app.start()
+    app.send_message(chat_id=OWNER_ID, text="✅ Bot deployed successfully and is now running!")
+    idle()  # Correct way to keep it running
+    app.stop()
+    logger.info("❌ Bot stopped.")
