@@ -1,7 +1,11 @@
-
 services:
-  - type: worker
+  - type: web
     name: telegram-mpeg2-bot
-    runtime: python
+    env: python
+    plan: free
     buildCommand: "pip install -r requirements.txt"
     startCommand: "python main.py"
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: 10000
