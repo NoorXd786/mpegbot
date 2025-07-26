@@ -56,12 +56,12 @@ def convert_mp4_to_mpeg2(input_path: str, output_path: str) -> bool:
             "-f", "mpegts",
             output_path
         ]
-        subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        result = subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         return True
     except subprocess.CalledProcessError as e:
-        logger.error(f"FFmpeg failed: {e.stderr.decode(errors='ignore')}")
+        logger.error("FFmpeg failed:\n" + e.stderr.decode())  # SHOWS FULL ERROR
         return False
-
+        
 # Authorization
 def is_owner(message: Message) -> bool:
     return message.from_user and message.from_user.id == OWNER_ID
@@ -119,6 +119,7 @@ async def handle_video(client: Client, message: Message):
                 caption="✅ Your MPEG-2 file is ready!",
                 file_name="converted.mpg"
             )
+                 
 
     except Exception as e:
         logger.exception("Unexpected error")
