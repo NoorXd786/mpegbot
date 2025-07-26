@@ -6,7 +6,6 @@ import tempfile
 import logging
 from flask import Flask
 import threading
-import asyncio
 
 # Logging setup
 logging.basicConfig(level=logging.INFO)
@@ -127,11 +126,7 @@ async def handle_video(client: Client, message: Message):
                 os.remove(f)
 
 # Main bot start with deployment message
-async def start_bot():
-    await app.start()
-    logger.info("✅ Bot is running.")
-    await app.send_message(chat_id=OWNER_ID, text="✅ Bot deployed successfully and is now running!")
-    await app.idle()
+
 if __name__ == "__main__":
     logger.info("✅ Bot is running.")
     app.run()
