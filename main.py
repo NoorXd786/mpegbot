@@ -132,6 +132,6 @@ async def start_bot():
     logger.info("✅ Bot is running.")
     await app.send_message(chat_id=OWNER_ID, text="✅ Bot deployed successfully and is now running!")
     await app.idle()
-
 if __name__ == "__main__":
-    asyncio.run(start_bot())
+    logger.info("✅ Bot is running.")
+    app.run()
