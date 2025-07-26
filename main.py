@@ -4,10 +4,23 @@ import os
 import subprocess
 import tempfile
 import logging
+import threading
+from flask import Flask
 
 # Logging setup
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Flask app to keep Render web service alive
+web_app = Flask(__name__)
+
+@web_app.route('/')
+def home():
+    return "✅ Bot is running!"
+
+def run_web():
+    port = int(os.environ.get("PORT", 10000))
+    web_app.run(host="0.0.0.0", port=port)
 
 # Environment variables
 API_ID = int(os.getenv("API_ID", 0))
@@ -15,7 +28,7 @@ API_HASH = os.getenv("API_HASH", "")
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 OWNER_ID = int(os.getenv("OWNER_ID", 0))
 
-# FFmpeg existence check
+# Check FFmpeg
 def check_ffmpeg():
     try:
         subprocess.run(["ffmpeg", "-version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
@@ -25,9 +38,9 @@ def check_ffmpeg():
 
 check_ffmpeg()
 
+# Pyrogram bot instance
 app = Client("mp4_to_mpeg2_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
-# Conversion function
 def convert_mp4_to_mpeg2(input_path: str, output_path: str) -> bool:
     try:
         command = [
@@ -45,18 +58,15 @@ def convert_mp4_to_mpeg2(input_path: str, output_path: str) -> bool:
         logger.error(f"FFmpeg failed: {e.stderr.decode(errors='ignore')}")
         return False
 
-# Authorization
 def is_owner(message: Message) -> bool:
     return message.from_user and message.from_user.id == OWNER_ID
 
-# /start
 @app.on_message(filters.command("start"))
 async def start_command(client: Client, message: Message):
     if not is_owner(message):
         return await message.reply("❌ You are not authorized to use this bot.")
     await message.reply("👋 Welcome! Send an MP4 video or document to convert it to MPEG-2 format.\nUse /help for more info.")
 
-# /help
 @app.on_message(filters.command("help"))
 async def help_command(client: Client, message: Message):
     if not is_owner(message):
@@ -68,7 +78,6 @@ async def help_command(client: Client, message: Message):
         "🎥 Just send an `.mp4` file (video or document) and I’ll convert it to MPEG-2 format."
     )
 
-# Handle MP4 input
 @app.on_message(filters.video | filters.document)
 async def handle_video(client: Client, message: Message):
     if not is_owner(message):
@@ -105,12 +114,31 @@ async def handle_video(client: Client, message: Message):
         logger.exception("Unexpected error")
         await status_msg.edit(f"❌ Error: {str(e)}")
     finally:
-        # Clean up files safely
         for f in [temp_input.name, temp_output.name]:
             if os.path.exists(f):
                 os.remove(f)
 
-# Entry point
+# Main runner
 if __name__ == "__main__":
-    logger.info("🔁 Starting MP4 to MPEG-2 Converter Bot...")
+    # Start Flask in background thread
+    threading.Thread(target=run_web).start()
+    
+    # Start Telegram bot
+    logger.info("📦 Starting Telegram bot with FFmpeg conversion...")
     app.run()
+
+# Main runner
+if __name__ == "__main__":
+    # Start Flask in background thread to open port
+    threading.Thread(target=run_web).start()
+
+    # Function to start bot and send confirmation message
+    async def start_bot():
+        await app.start()
+        await app.send_message(chat_id=OWNER_ID, text="✅ *Bot deployed successfully and is now running!*", parse_mode="markdown")
+        await app.idle()
+
+    # Run the async start
+    import asyncio
+    logger.info("📦 Starting Telegram bot with FFmpeg conversion...")
+    asyncio.run(start_bot())
